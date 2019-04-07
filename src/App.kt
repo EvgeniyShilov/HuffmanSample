@@ -3,13 +3,18 @@ import java.nio.file.Files
 import java.util.*
 import kotlin.collections.HashMap
 
+private const val FLAG_COMPRESS = "-c"
+private const val FLAG_DECOMPRESS = "-x"
+
 fun main(args: Array<String>) {
-    compress()
-    decompress()
+    when(args[0]) {
+        FLAG_COMPRESS -> compress(args[1], args[2])
+        FLAG_DECOMPRESS -> decompress(args[1], args[2])
+    }
 }
 
-private fun compress() {
-    val inputBytes = File("book.txt").let { Files.readAllBytes(it.toPath()) }
+private fun compress(inputFileName: String, outputFileName: String) {
+    val inputBytes = File(inputFileName).let { Files.readAllBytes(it.toPath()) }
     val counts = ArrayList<Pair<Byte, Int>>()
     inputBytes.forEach { byte ->
         (counts.find { it.first == byte }
@@ -49,7 +54,7 @@ private fun compress() {
     outputBytes.add(bitStringToByte(buffer))
     val lengthOfFileInBites = (outputBytes.size.toLong() - 1) * 8 + buffer.length
     val lengthOfTableInEntries = table.size
-    val output = DataOutputStream(FileOutputStream("compressed"))
+    val output = DataOutputStream(FileOutputStream(outputFileName))
     output.writeLong(lengthOfFileInBites)
     output.writeByte(lengthOfTableInEntries)
     table.forEach { byte, string ->
@@ -61,8 +66,8 @@ private fun compress() {
     output.close()
 }
 
-private fun decompress() {
-    val input = DataInputStream(FileInputStream("compressed"))
+private fun decompress(inputFileName: String, outputFileName: String) {
+    val input = DataInputStream(FileInputStream(inputFileName))
     val lengthOfFileInBites = input.readLong()
     val lengthOfTableInEntries = input.readByte().toPositiveInt()
     val root = Node(null)
@@ -80,7 +85,7 @@ private fun decompress() {
     }
     val lengthOfFileInBytes = lengthOfFileInBites / 8 + if (lengthOfFileInBites % 8 != 0L) 1 else 0
     var node = root
-    val output = DataOutputStream(FileOutputStream("decompressed.txt"))
+    val output = DataOutputStream(FileOutputStream(outputFileName))
     for (i in 0 until lengthOfFileInBytes) {
         val bitString = byteToBitString(
                 input.readUnsignedByte(),
